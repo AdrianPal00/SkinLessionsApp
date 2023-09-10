@@ -3,6 +3,7 @@ package com.example.skinlesionsapp;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -23,7 +24,12 @@ import androidx.core.content.ContextCompat;
 
 import com.example.skinlesionsapp.R;
 
+import org.tensorflow.lite.Interpreter;
+
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonGallery;
     private ImageView imageView;
     private LinearLayout lesionTypesLayout;
+    private Interpreter tflite;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +74,26 @@ public class MainActivity extends AppCompatActivity {
                 imageView.setVisibility(View.VISIBLE);
             }
         });
+
+        // Load the TFLite model
+        loadModel();
+    }
+
+    private void loadModel() {
+        try {
+            tflite = new Interpreter(loadModelFile());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private MappedByteBuffer loadModelFile() throws IOException {
+        AssetFileDescriptor fileDescriptor = getAssets().openFd("your_model.tflite");
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
     private boolean checkCameraPermission() {
